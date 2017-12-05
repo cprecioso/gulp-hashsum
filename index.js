@@ -3,35 +3,15 @@
 var crypto = require('crypto');
 var gutil = require('gulp-util');
 var _ = require('lodash');
-var mkdirp = require('mkdirp');
 var slash = require('slash');
 var through = require('through');
 
-var fs = require('fs');
 var path = require('path');
-
-var compareBuffer = typeof Buffer.compare !== 'undefined' 
-		? Buffer.compare 
-		: function (a, b) {
-			// Naive implementation of Buffer comparison for older 
-			// Node versions. Doesn't follow the same spec as 
-			// Buffer.compare, but we're only interested in equality.
-			if (a.length !== b.length) {
-				return -1;
-			}
-			for (var i = 0; i < a.length; i++) {
-				if (a[i] !== b[i]) {
-					return -1;
-				}
-			}
-			return 0;
-		};
 
 function hashsum(options) {
 	options = _.defaults(options || {}, {
 		dest: process.cwd(),
 		hash: 'sha1',
-		force: false,
 		delimiter: '  ',
 		json: false
 	});
@@ -70,10 +50,11 @@ function hashsum(options) {
 		}
 		var data = new Buffer(contents);
 
-		if (options.force || !fs.existsSync(hashesFilePath) || compareBuffer(fs.readFileSync(hashesFilePath), data) !== 0) {
-			mkdirp(path.dirname(hashesFilePath));
-			fs.writeFileSync(hashesFilePath, data);
-		}
+		this.push(new gutil.File({
+			path: hashesFilePath,
+			contents: data
+		}));
+
 		this.emit('end');
 	}
 
